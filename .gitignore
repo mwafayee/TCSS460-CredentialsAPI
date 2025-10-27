@@ -4,8 +4,13 @@
 /dist
 /build
 
-# evn
-.env*
+# Environment variables
+.env
+.env.test
+.env.local
+.env.*.local
+# But keep the example file
+!.env.example
 
 # Node
 /node_modules
