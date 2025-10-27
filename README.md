@@ -119,20 +119,25 @@ npm --version   # v10+ recommended
 ### Installation
 
 ```bash
-# Install dependencies
+# 1. Install dependencies
 npm install
 
-# Set up environment variables
-cp .env.test .env
-# Edit .env with your database credentials and JWT secret
+# 2. Set up environment variables
+cp .env.example .env
+# Edit .env with your actual values:
+#   - Database credentials (username, password, database name)
+#   - JWT secret (generate a secure random string)
+#   - Email configuration (if using email verification)
 
-# Start PostgreSQL with Docker
+# 3. Start PostgreSQL with Docker
 docker-compose up -d
 
-# Initialize database schema
+# 4. Initialize database schema
 psql -U your_user -d your_database -f data/init.sql
+# OR if using Docker:
+# docker exec -i postgres-container psql -U tcss460 -d auth-squared < data/init.sql
 
-# Run in development mode
+# 5. Run in development mode
 npm run dev
 ```
 
