@@ -28,23 +28,50 @@ const optionalEnvVars = {
 /**
  * Validate that all required environment variables are present
  * Call this at application startup
+ *
+ * Educational Note:
+ * This validation happens BEFORE the server starts to prevent runtime errors
+ * with missing configuration. Failing fast at startup is better than discovering
+ * missing config when a user tries to log in.
+ *
+ * @throws Error with helpful message if required variables are missing
  */
 export const validateEnv = (): void => {
     const missing = requiredEnvVars.filter(key => !process.env[key]);
-    
+
     if (missing.length > 0) {
-        console.error('❌ Missing required environment variables:', missing.join(', '));
+        console.error('\n❌ Missing required environment variables:\n');
+        missing.forEach(varName => {
+            console.error(`   • ${varName}`);
+        });
+        console.error('\n💡 How to fix this:\n');
+        console.error('   1. Copy .env.example to .env');
+        console.error('      cp .env.example .env\n');
+        console.error('   2. Edit .env and add your values:');
+        missing.forEach(varName => {
+            if (varName === 'JWT_SECRET') {
+                console.error(`      ${varName}=your-secret-key-here`);
+                console.error('      (Generate a secure key with: openssl rand -base64 32)');
+            } else if (varName === 'DATABASE_URL') {
+                console.error(`      ${varName}=postgresql://username:password@localhost:5432/database_name`);
+            } else if (varName.includes('EMAIL')) {
+                console.error(`      ${varName}=your-email-config-here`);
+            } else {
+                console.error(`      ${varName}=value`);
+            }
+        });
+        console.error('\n   3. Check .env.example for detailed instructions\n');
+
         throw new Error(`Missing required environment variables: ${missing.join(', ')}`);
     }
-    
+
     // Set defaults for optional variables
     Object.entries(optionalEnvVars).forEach(([key, defaultValue]) => {
         if (!process.env[key]) {
             process.env[key] = defaultValue;
-            console.log(`ℹ️ Using default value for ${key}: ${defaultValue}`);
         }
     });
-    
+
     console.log('✅ Environment variables validated successfully');
 };
 

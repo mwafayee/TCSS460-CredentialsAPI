@@ -5,9 +5,6 @@ import swaggerUi from 'swagger-ui-express';
 import YAML from 'yamljs';
 import path from 'path';
 
-// Import utilities
-import { validateEnv, initializeEmailService } from './core/utilities';
-
 // Import routes
 import { routes } from './routes';
 
@@ -15,13 +12,12 @@ import { routes } from './routes';
  * Create and configure Express application
  * This function handles all Express middleware, routes, and configuration
  * Separated from server startup logic for better testability
+ *
+ * Note: Environment validation and service initialization (email, etc.) are
+ * handled in index.ts during server startup. This allows app.ts to be imported
+ * safely for testing without requiring a complete .env file.
  */
 export const createApp = (): Express => {
-    // Validate environment variables before configuring app
-    validateEnv();
-
-    // Initialize email service
-    initializeEmailService();
 
     const app: Express = express();
 
