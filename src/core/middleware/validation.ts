@@ -28,18 +28,22 @@ export const handleValidationErrors = (request: Request, response: Response, nex
 
 /**
  * Login validation
- * TODO: Implement validation for login
  * - Email: required, valid email format, normalized
  * - Password: required
  */
 export const validateLogin = [
-    // TODO: Add validation rules here
+    body('email')
+        .exists().withMessage('Email is required')
+        .isEmail().withMessage('Invalid email format')
+        .normalizeEmail(),
+    body('password')
+        .exists().withMessage('Password is required')
+        .isLength({ min: 1 }).withMessage('Password cannot be empty'),
     handleValidationErrors
 ];
 
 /**
  * Public registration validation (no role field allowed)
- * TODO: Implement validation for registration
  * - firstname: required, 1-100 characters
  * - lastname: required, 1-100 characters
  * - email: required, valid email format, normalized
@@ -49,7 +53,26 @@ export const validateLogin = [
  * NOTE: No role validation - public registration always creates basic users
  */
 export const validateRegister = [
-    // TODO: Add validation rules here
+    body('firstname')
+        .exists().withMessage('First name is required')
+        .isLength({ min: 1, max: 100 }).withMessage('First name must be 1–100 characters'),
+    body('lastname')
+        .exists().withMessage('Last name is required')
+        .isLength({ min: 1, max: 100 }).withMessage('Last name must be 1–100 characters'),
+    body('email')
+        .exists().withMessage('Email is required')
+        .isEmail().withMessage('Invalid email format')
+        .normalizeEmail(),
+    body('username')
+        .exists().withMessage('Username is required')
+        .isLength({ min: 3, max: 50 }).withMessage('Username must be 3–50 characters')
+        .matches(/^[a-zA-Z0-9_-]+$/).withMessage('Username can only contain letters, numbers, underscores, and hyphens'),
+    body('password')
+        .exists().withMessage('Password is required')
+        .isLength({ min: 8, max: 128 }).withMessage('Password must be 8–128 characters'),
+    body('phone')
+        .exists().withMessage('Phone number is required')
+        .isLength({ min: 10 }).withMessage('Phone must have at least 10 digits'),
     handleValidationErrors
 ];
 
@@ -59,33 +82,44 @@ export const validateRegister = [
 
 /**
  * Password reset request validation
- * TODO: Implement validation for password reset request
  * - Email: required, valid email format, normalized
  */
 export const validatePasswordResetRequest = [
-    // TODO: Add validation rules here
+    body('email')
+        .exists().withMessage('Email is required')
+        .isEmail().withMessage('Invalid email format')
+        .normalizeEmail(),
     handleValidationErrors
 ];
 
 /**
  * Password reset validation (with token)
- * TODO: Implement validation for password reset
  * - token: required, trimmed
  * - password: required, 8-128 characters
  */
 export const validatePasswordReset = [
-    // TODO: Add validation rules here
+    body('token')
+        .exists().withMessage('Token is required')
+        .trim(),
+    body('password')
+        .exists().withMessage('Password is required')
+        .isLength({ min: 8, max: 128 }).withMessage('Password must be 8–128 characters'),
     handleValidationErrors
 ];
 
 /**
  * Password change validation (for authenticated users)
- * TODO: Implement validation for password change
  * - oldPassword: required
  * - newPassword: required, 8-128 characters, different from old password
  */
 export const validatePasswordChange = [
-    // TODO: Add validation rules here
+    body('oldPassword')
+        .exists().withMessage('Old password is required'),
+    body('newPassword')
+        .exists().withMessage('New password is required')
+        .isLength({ min: 8, max: 128 }).withMessage('New password must be 8–128 characters')
+        .custom((value, { req }) => value !== req.body.oldPassword)
+        .withMessage('New password must be different from old password'),
     handleValidationErrors
 ];
 
@@ -95,31 +129,36 @@ export const validatePasswordChange = [
 
 /**
  * Phone verification send validation
- * TODO: Implement validation for sending phone verification
  * - carrier: optional, must be valid SMS gateway from SMS_GATEWAYS
  */
 export const validatePhoneSend = [
-    // TODO: Add validation rules here
+    body('carrier')
+        .optional()
+        .isIn(Object.keys(SMS_GATEWAYS)).withMessage('Invalid carrier'),
     handleValidationErrors
 ];
 
 /**
  * Phone verification code validation
- * TODO: Implement validation for phone verification code
  * - code: required, trimmed, exactly 6 digits
  */
 export const validatePhoneVerify = [
-    // TODO: Add validation rules here
+    body('code')
+        .exists().withMessage('Verification code is required')
+        .trim()
+        .isLength({ min: 6, max: 6 }).withMessage('Code must be exactly 6 digits')
+        .isNumeric().withMessage('Code must contain only digits'),
     handleValidationErrors
 ];
 
 /**
  * Email verification token validation (query param)
- * TODO: Implement validation for email verification token
  * - token: required parameter, trimmed
  */
 export const validateEmailToken = [
-    // TODO: Add validation rules here
+    query('token')
+        .exists().withMessage('Token is required')
+        .trim(),
     handleValidationErrors
 ];
 
@@ -130,11 +169,12 @@ export const validateEmailToken = [
 /**
  * Validate user ID in params matches JWT claims
  * Use this for routes where users can only access their own resources
- * TODO: Implement validation for user ID parameter
  * - id: required, integer
  */
 export const validateUserIdParam = [
-    // TODO: Add validation rules here
+    param('id')
+        .exists().withMessage('User ID is required')
+        .isInt().withMessage('User ID must be an integer'),
     handleValidationErrors
 ];
 
@@ -145,23 +185,30 @@ export const validateUserIdParam = [
 /**
  * Custom password strength validator (optional, more strict)
  * Add to password fields if you want stronger validation
- * TODO: Implement strong password validation
  * - Minimum 8 characters
  * - At least one uppercase letter
  * - At least one lowercase letter
  * - At least one number
  * - At least one special character (@$!%*?&)
  */
-export const passwordStrength = body('password');
-    // TODO: Add password strength rules here
+export const passwordStrength = body('password')
+    .isLength({ min: 8 }).withMessage('Password must be at least 8 characters')
+    .matches(/[A-Z]/).withMessage('Must contain at least one uppercase letter')
+    .matches(/[a-z]/).withMessage('Must contain at least one lowercase letter')
+    .matches(/[0-9]/).withMessage('Must contain at least one number')
+    .matches(/[@$!%*?&]/).withMessage('Must contain at least one special character');
 
 /**
  * Sanitize and validate pagination parameters
- * TODO: Implement pagination validation
  * - page: optional, positive integer
  * - limit: optional, integer between 1 and 100
  */
 export const validatePagination = [
-    // TODO: Add validation rules here
+    query('page')
+        .optional()
+        .isInt({ min: 1 }).withMessage('Page must be a positive integer'),
+    query('limit')
+        .optional()
+        .isInt({ min: 1, max: 100 }).withMessage('Limit must be 1–100'),
     handleValidationErrors
 ];

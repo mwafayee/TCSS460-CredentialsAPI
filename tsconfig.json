@@ -17,16 +17,38 @@
 
     // Path mapping configuration
     "baseUrl": "./src",
-    "paths": {
-      "@core/*": ["core/*"],
-      "@routes/*": ["routes/*"],
-      "@controllers": ["controllers/index"],
-      "@utilities": ["core/utilities/index"],
-      "@middleware": ["core/middleware/index"],
-      "@models": ["core/models/index"],
-      "@db": ["core/utilities/database"],  // Direct access to database
-      "@auth": ["core/utilities/credentialingUtils"]  // Auth utilities
-    }
+//    "paths": {
+//      "@core/*": ["core/*"],
+//      "@routes/*": ["routes/*"],
+//      "@controllers": ["controllers/index"],
+//      "@utilities": ["core/utilities/index"],
+//      "@middleware": ["core/middleware/index"],
+//      "@models": ["core/models/index"],
+//      "@db": ["core/utilities/database"],  // Direct access to database
+//      "@auth": ["core/utilities/credentialingUtils"]  // Auth utilities
+//    }
+      "paths": {
+          "@core/*": ["core/*"],
+          "@routes/*": ["routes/*"],
+          "@controllers": ["controllers/index"],
+          "@controllers/*": ["controllers/*"],
+          "@utilities": ["core/utilities/index"],
+          "@utilities/*": ["core/utilities/*"],
+          "@middleware": ["core/middleware/index"],
+          "@middleware/*": ["core/middleware/*"],
+          "@models": ["core/models/index"],
+          "@models/*": ["core/models/*"],
+          "@db": ["core/utilities/database"],
+          "@auth": ["core/utilities/credentialingUtils"],
+          "@data": ["data/*"],
+          "@docs": ["docs/*"],
+          "@tests": ["test/*"]
+      }
+
+
+
+
+
   },
   "include": ["src/**/*"],
   "exclude": ["node_modules", "dist", "**/*.test.ts"]
