@@ -1,34 +1,17 @@
-openapi: 3.0.0
+openapi: 3.0.3
 info:
-  title: TCSS-460-auth-squared Template API
+  title: TCSS-460 Credentials API
+  version: "1.0.0"
   description: |
-    # Authentication × Authorization = Auth²
+    REST API for authentication and user credential management. This API provides secure user registration, login, verification, and password management.
 
-    **Student Template/Starter Project** for TCSS-460 Web API Development
+    **Authentication × Authorization = Auth²**
 
-    This is a template project demonstrating authentication and authorization concepts. Students will implement advanced features including admin routes, role-based access control, and user management capabilities.
-    
-    ## Authentication Flow
-    1. **Register** a new account (`POST /auth/register`) - Creates a basic user (role 1)
-    2. **Login** with credentials (`POST /auth/login`) - Returns JWT token
-    3. Include token in `Authorization: Bearer <token>` header for protected endpoints
-    4. **Verify** email and phone for full account activation
-    
-    ## Role Hierarchy
-    - **1 - User**: Basic access
-    - **2 - Moderator**: User management
-    - **3 - Admin**: Full user CRUD, create equal/lower roles
-    - **4 - SuperAdmin**: System administration
-    - **5 - Owner**: Complete system control
-    
-    ## Security
-    - SHA256 password hashing with unique salts
-    - JWT tokens (14-day expiry)
-    - Email verification (48-hour tokens)
-    - SMS verification (6-digit codes, 15-minute expiry)
-    - Role-based access control with hierarchy enforcement
+    Student Template/Starter Project for TCSS-460 Web API Development demonstrating authentication and authorization concepts.
 
-  version: 1.0.0
+    **Published Web API**
+    Hosted at: [http://localhost:8000](http://localhost:8000)
+
   contact:
     name: TCSS 460 Support
     email: tcss460professor@gmail.com
@@ -38,484 +21,14 @@ info:
 
 servers:
   - url: http://localhost:8000
-    description: Development server
+    description: Local development
   - url: https://your-production-url.com
     description: Production server
 
-tags:
-  - name: Public Auth
-    description: Authentication endpoints (no token required)
-  - name: Protected Auth
-    description: Authentication endpoints (token required)
-  - name: Verification
-    description: Email and phone verification
-  - name: Testing
-    description: Development and testing endpoints
-
-paths:
-  # ===== PUBLIC AUTH ENDPOINTS =====
-  /auth/register:
-    post:
-      tags:
-        - Public Auth
-      summary: Register new user account
-      description: |
-        Creates a new user account with role 1 (User).
-        
-        **Validation Rules:**
-        - Email must be unique and valid format
-        - Username must be unique, 3-50 chars, alphanumeric + underscore/hyphen
-        - Password must be 8-128 characters
-        - Phone must be at least 10 digits
-        
-        **Account Status:** New accounts are created with 'pending' status until verified.
-      operationId: registerUser
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/RegisterRequest'
-            examples:
-              validRegistration:
-                summary: Valid registration
-                value:
-                  firstname: John
-                  lastname: Doe
-                  email: john.doe@example.com
-                  username: johndoe
-                  password: SecurePass123!
-                  phone: "2065551234"
-      responses:
-        '201':
-          description: Registration successful
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/AuthResponse'
-        '400':
-          $ref: '#/components/responses/ValidationError'
-        '500':
-          $ref: '#/components/responses/ServerError'
-
-  /auth/login:
-    post:
-      tags:
-        - Public Auth
-      summary: Login with credentials
-      description: |
-        Authenticates user and returns JWT token.
-        
-        **Account Restrictions:**
-        - Suspended accounts receive 403 error
-        - Locked accounts receive 403 error
-        - Unverified accounts can login but have limited access
-      operationId: loginUser
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/LoginRequest'
-            examples:
-              validLogin:
-                summary: Valid credentials
-                value:
-                  email: john.doe@example.com
-                  password: SecurePass123!
-      responses:
-        '200':
-          description: Login successful
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/AuthResponse'
-        '401':
-          $ref: '#/components/responses/UnauthorizedError'
-        '403':
-          $ref: '#/components/responses/ForbiddenError'
-        '500':
-          $ref: '#/components/responses/ServerError'
-
-  /auth/password/reset-request:
-    post:
-      tags:
-        - Public Auth
-      summary: Request password reset
-      description: |
-        Sends password reset email if account exists and email is verified.
-        
-        **Security:** Always returns same message regardless of email existence.
-        
-        **Token Expiry:** Reset tokens expire in 1 hour.
-      operationId: requestPasswordReset
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required:
-                - email
-              properties:
-                email:
-                  type: string
-                  format: email
-                  description: Account email address
-            examples:
-              resetRequest:
-                value:
-                  email: john.doe@example.com
-      responses:
-        '200':
-          description: Request processed (check email if account exists)
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/SuccessResponse'
-        '500':
-          $ref: '#/components/responses/ServerError'
-
-  /auth/password/reset:
-    post:
-      tags:
-        - Public Auth
-      summary: Reset password with token
-      description: |
-        Resets password using token from reset email.
-        
-        **Token Requirements:**
-        - Must be valid JWT token
-        - Must have type 'password_reset'
-        - Must not be expired (1 hour limit)
-      operationId: resetPassword
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required:
-                - token
-                - password
-              properties:
-                token:
-                  type: string
-                  description: Reset token from email
-                password:
-                  type: string
-                  format: password
-                  minLength: 8
-                  maxLength: 128
-                  description: New password
-            examples:
-              validReset:
-                value:
-                  token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
-                  password: NewSecurePass456!
-      responses:
-        '200':
-          description: Password reset successful
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/SuccessResponse'
-        '400':
-          $ref: '#/components/responses/ValidationError'
-        '500':
-          $ref: '#/components/responses/ServerError'
-
-  /auth/verify/carriers:
-    get:
-      tags:
-        - Verification
-      summary: Get supported SMS carriers
-      description: Returns list of supported carriers for SMS verification via email gateway.
-      operationId: getCarriers
-      responses:
-        '200':
-          description: List of carriers
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                  data:
-                    type: object
-                    properties:
-                      carriers:
-                        type: array
-                        items:
-                          type: object
-                          properties:
-                            id:
-                              type: string
-                              example: att
-                            name:
-                              type: string
-                              example: Att
-                            gateway:
-                              type: string
-                              example: '@txt.att.net'
-                      note:
-                        type: string
-
-  /auth/verify/email/confirm:
-    get:
-      tags:
-        - Verification
-      summary: Verify email via link
-      description: |
-        Verifies email address using token from verification email.
-        
-        **Token Requirements:**
-        - Must match stored verification token
-        - Must not be expired (48 hour limit)
-        - Can only be used once
-      operationId: confirmEmail
-      parameters:
-        - name: token
-          in: query
-          required: true
-          schema:
-            type: string
-          description: Verification token from email
-      responses:
-        '200':
-          description: Email verified successfully
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/SuccessResponse'
-        '400':
-          $ref: '#/components/responses/ValidationError'
-        '500':
-          $ref: '#/components/responses/ServerError'
-
-  # ===== PROTECTED AUTH ENDPOINTS =====
-  /jwt_test:
-    get:
-      tags:
-        - Testing
-      summary: Test JWT token validity
-      description: Validates JWT token and returns success message.
-      operationId: testJWT
-      security:
-        - bearerAuth: []
-      responses:
-        '200':
-          description: Token is valid
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: Your token is valid
-        '401':
-          $ref: '#/components/responses/UnauthorizedError'
-        '403':
-          $ref: '#/components/responses/ForbiddenError'
-
-  /auth/user/password/change:
-    post:
-      tags:
-        - Protected Auth
-      summary: Change password
-      description: |
-        Changes user password (requires old password verification).
-        
-        **Requirements:**
-        - Must provide correct old password
-        - New password must be different from old
-        - Updates account timestamp
-      operationId: changePassword
-      security:
-        - bearerAuth: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required:
-                - oldPassword
-                - newPassword
-              properties:
-                oldPassword:
-                  type: string
-                  format: password
-                  description: Current password
-                newPassword:
-                  type: string
-                  format: password
-                  minLength: 8
-                  maxLength: 128
-                  description: New password (must be different)
-            examples:
-              validChange:
-                value:
-                  oldPassword: CurrentPass123!
-                  newPassword: NewSecurePass456!
-      responses:
-        '200':
-          description: Password changed successfully
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/SuccessResponse'
-        '400':
-          $ref: '#/components/responses/ValidationError'
-        '401':
-          $ref: '#/components/responses/UnauthorizedError'
-        '404':
-          $ref: '#/components/responses/NotFoundError'
-        '500':
-          $ref: '#/components/responses/ServerError'
-
-  /auth/verify/phone/send:
-    post:
-      tags:
-        - Verification
-      summary: Send SMS verification code
-      description: |
-        Sends 6-digit verification code via SMS (email-to-SMS gateway).
-        
-        **Rate Limiting:** 1 request per minute
-        
-        **Code Expiry:** 15 minutes
-        
-        **Carrier Selection:** Optional carrier parameter for specific gateways
-      operationId: sendPhoneVerification
-      security:
-        - bearerAuth: []
-      requestBody:
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                carrier:
-                  type: string
-                  description: Optional carrier ID (att, tmobile, verizon, etc.)
-                  example: att
-      responses:
-        '200':
-          description: Verification code sent
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                  data:
-                    type: object
-                    properties:
-                      expiresIn:
-                        type: string
-                        example: 15 minutes
-                      method:
-                        type: string
-                        example: email-to-sms
-                      availableCarriers:
-                        type: array
-                        items:
-                          type: string
-        '400':
-          $ref: '#/components/responses/ValidationError'
-        '429':
-          $ref: '#/components/responses/RateLimitError'
-        '500':
-          $ref: '#/components/responses/ServerError'
-
-  /auth/verify/phone/verify:
-    post:
-      tags:
-        - Verification
-      summary: Verify SMS code
-      description: |
-        Verifies 6-digit code sent via SMS.
-        
-        **Attempt Limit:** 3 attempts per code
-        
-        **Code Requirements:**
-        - Must be 6 digits
-        - Must not be expired
-        - Must match most recent code
-      operationId: verifyPhone
-      security:
-        - bearerAuth: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required:
-                - code
-              properties:
-                code:
-                  type: string
-                  pattern: '^\d{6}$'
-                  description: 6-digit verification code
-                  example: "123456"
-      responses:
-        '200':
-          description: Phone verified successfully
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/SuccessResponse'
-        '400':
-          $ref: '#/components/responses/ValidationError'
-        '429':
-          $ref: '#/components/responses/RateLimitError'
-        '500':
-          $ref: '#/components/responses/ServerError'
-
-  /auth/verify/email/send:
-    post:
-      tags:
-        - Verification
-      summary: Send email verification
-      description: |
-        Sends verification email with link.
-        
-        **Rate Limiting:** 1 request per 5 minutes
-        
-        **Token Expiry:** 48 hours
-      operationId: sendEmailVerification
-      security:
-        - bearerAuth: []
-      responses:
-        '200':
-          description: Verification email sent
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                  data:
-                    type: object
-                    properties:
-                      expiresIn:
-                        type: string
-                        example: 48 hours
-        '400':
-          $ref: '#/components/responses/ValidationError'
-        '429':
-          $ref: '#/components/responses/RateLimitError'
-        '500':
-          $ref: '#/components/responses/ServerError'
+security:
+  - bearerAuth: []
 
 components:
-  # ===== SECURITY SCHEMES =====
   securitySchemes:
     bearerAuth:
       type: http
@@ -523,22 +36,11 @@ components:
       bearerFormat: JWT
       description: |
         JWT token from login or registration.
-        
+
         Format: `Bearer <token>`
-        
+
         Expiry: 14 days
 
-  # ===== PARAMETERS =====
-  parameters:
-    UserId:
-      name: id
-      in: path
-      required: true
-      schema:
-        type: integer
-      description: User ID
-
-  # ===== SCHEMAS =====
   schemas:
     RegisterRequest:
       type: object
@@ -554,31 +56,37 @@ components:
           type: string
           minLength: 1
           maxLength: 100
+          description: User's first name
           example: John
         lastname:
           type: string
           minLength: 1
           maxLength: 100
+          description: User's last name
           example: Doe
         email:
           type: string
           format: email
+          description: Valid email address (must be unique)
           example: john.doe@example.com
         username:
           type: string
           minLength: 3
           maxLength: 50
           pattern: '^[a-zA-Z0-9_-]+$'
+          description: Username (alphanumeric, underscore, hyphen only)
           example: johndoe
         password:
           type: string
           format: password
           minLength: 8
           maxLength: 128
+          description: Password (8-128 characters)
           example: SecurePass123!
         phone:
           type: string
           pattern: '^\d{10,}$'
+          description: Phone number (minimum 10 digits)
           example: "2065551234"
 
     LoginRequest:
@@ -590,10 +98,12 @@ components:
         email:
           type: string
           format: email
+          description: Registered email address
           example: john.doe@example.com
         password:
           type: string
           format: password
+          description: Account password
           example: SecurePass123!
 
     AuthResponse:
@@ -620,6 +130,7 @@ components:
       properties:
         id:
           type: integer
+          description: Unique user identifier
           example: 123
         email:
           type: string
@@ -627,9 +138,11 @@ components:
           example: john.doe@example.com
         name:
           type: string
+          description: First name
           example: John
         lastname:
           type: string
+          description: Last name
           example: Doe
         username:
           type: string
@@ -637,16 +150,20 @@ components:
         role:
           type: string
           enum: [User, Moderator, Admin, SuperAdmin, Owner]
+          description: User role
           example: User
         emailVerified:
           type: boolean
+          description: Email verification status
           example: false
         phoneVerified:
           type: boolean
+          description: Phone verification status
           example: false
         accountStatus:
           type: string
           enum: [pending, active, suspended, locked, deleted]
+          description: Current account status
           example: pending
 
     UserDetails:
@@ -667,14 +184,17 @@ components:
               type: integer
               minimum: 1
               maximum: 5
+              description: Role hierarchy level
               example: 1
             createdAt:
               type: string
               format: date-time
+              description: Account creation timestamp
               example: '2024-01-15T10:30:00Z'
             updatedAt:
               type: string
               format: date-time
+              description: Last update timestamp
               example: '2024-01-15T10:30:00Z'
 
     SuccessResponse:
@@ -724,33 +244,29 @@ components:
                 type: string
                 example: Invalid email format
 
-    PaginationMeta:
-      type: object
-      properties:
-        page:
-          type: integer
-          example: 1
-        limit:
-          type: integer
-          example: 20
-        totalUsers:
-          type: integer
-          example: 150
-        totalPages:
-          type: integer
-          example: 8
-
-  # ===== RESPONSES =====
   responses:
-    ValidationError:
-      description: Validation error
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            userNotFound:
+              value:
+                success: false
+                message: User not found
+                errorCode: USER001
+
+    BadRequest:
+      description: Bad request - invalid input or parameters
       content:
         application/json:
           schema:
             $ref: '#/components/schemas/ValidationErrorResponse'
 
-    UnauthorizedError:
-      description: Authentication required
+    Unauthorized:
+      description: Missing or invalid authentication
       content:
         application/json:
           schema:
@@ -767,8 +283,8 @@ components:
                 message: Invalid credentials
                 errorCode: AUTH001
 
-    ForbiddenError:
-      description: Access forbidden
+    Forbidden:
+      description: Access forbidden - insufficient permissions
       content:
         application/json:
           schema:
@@ -790,20 +306,7 @@ components:
                 message: Account is suspended. Please contact support.
                 errorCode: AUTH005
 
-    NotFoundError:
-      description: Resource not found
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/ErrorResponse'
-          examples:
-            userNotFound:
-              value:
-                success: false
-                message: User not found
-                errorCode: USER001
-
-    RateLimitError:
+    RateLimit:
       description: Rate limit exceeded
       content:
         application/json:
@@ -828,3 +331,940 @@ components:
                 success: false
                 message: Server error - contact support
                 errorCode: SRVR001
+
+paths:
+  /auth/register:
+    post:
+      tags:
+        - authentication
+      summary: Register new user account
+      description: |
+        Creates a new user account with role 1 (User).
+
+        **Validation Rules:**
+        - Email must be unique and valid format
+        - Username must be unique, 3-50 chars, alphanumeric + underscore/hyphen
+        - Password must be 8-128 characters
+        - Phone must be at least 10 digits
+
+        **Account Status:** New accounts are created with 'pending' status until verified.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+      responses:
+        '201':
+          description: Registration successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /auth/login:
+    post:
+      tags:
+        - authentication
+      summary: Login with credentials
+      description: |
+        Authenticates user and returns JWT token.
+
+        **Account Restrictions:**
+        - Suspended accounts receive 403 error
+        - Locked accounts receive 403 error
+        - Unverified accounts can login but have limited access
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /auth/password/reset-request:
+    post:
+      tags:
+        - authentication
+      summary: Request password reset
+      description: |
+        Sends password reset email if account exists and email is verified.
+
+        **Security:** Always returns same message regardless of email existence.
+
+        **Token Expiry:** Reset tokens expire in 1 hour.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+              properties:
+                email:
+                  type: string
+                  format: email
+                  description: Account email address
+                  example: john.doe@example.com
+      responses:
+        '200':
+          description: Request processed (check email if account exists)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /auth/password/reset:
+    post:
+      tags:
+        - authentication
+      summary: Reset password with token
+      description: |
+        Resets password using token from reset email.
+
+        **Token Requirements:**
+        - Must be valid JWT token
+        - Must have type 'password_reset'
+        - Must not be expired (1 hour limit)
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - token
+                - password
+              properties:
+                token:
+                  type: string
+                  description: Reset token from email
+                  example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+                password:
+                  type: string
+                  format: password
+                  minLength: 8
+                  maxLength: 128
+                  description: New password
+                  example: NewSecurePass456!
+      responses:
+        '200':
+          description: Password reset successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /auth/user/password/change:
+    post:
+      tags:
+        - authentication
+      summary: Change password (authenticated)
+      description: |
+        Changes user password (requires old password verification).
+
+        **Requirements:**
+        - Must provide correct old password
+        - New password must be different from old
+        - Updates account timestamp
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - oldPassword
+                - newPassword
+              properties:
+                oldPassword:
+                  type: string
+                  format: password
+                  description: Current password
+                  example: CurrentPass123!
+                newPassword:
+                  type: string
+                  format: password
+                  minLength: 8
+                  maxLength: 128
+                  description: New password (must be different)
+                  example: NewSecurePass456!
+      responses:
+        '200':
+          description: Password changed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /auth/verify/carriers:
+    get:
+      tags:
+        - verification
+      summary: Get supported SMS carriers
+      description: Returns list of supported carriers for SMS verification via email gateway.
+      security: []
+      responses:
+        '200':
+          description: List of carriers
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      carriers:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            id:
+                              type: string
+                              example: att
+                            name:
+                              type: string
+                              example: AT&T
+                            gateway:
+                              type: string
+                              example: '@txt.att.net'
+                      note:
+                        type: string
+                        example: Select your carrier for SMS verification
+
+  /auth/verify/email/confirm:
+    get:
+      tags:
+        - verification
+      summary: Verify email via link
+      description: |
+        Verifies email address using token from verification email.
+
+        **Token Requirements:**
+        - Must match stored verification token
+        - Must not be expired (48 hour limit)
+        - Can only be used once
+      security: []
+      parameters:
+        - name: token
+          in: query
+          required: true
+          schema:
+            type: string
+          description: Verification token from email
+      responses:
+        '200':
+          description: Email verified successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /auth/verify/email/send:
+    post:
+      tags:
+        - verification
+      summary: Send email verification
+      description: |
+        Sends verification email with link.
+
+        **Rate Limiting:** 1 request per 5 minutes
+
+        **Token Expiry:** 48 hours
+      responses:
+        '200':
+          description: Verification email sent
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      expiresIn:
+                        type: string
+                        example: 48 hours
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '429':
+          $ref: '#/components/responses/RateLimit'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /auth/verify/phone/send:
+    post:
+      tags:
+        - verification
+      summary: Send SMS verification code
+      description: |
+        Sends 6-digit verification code via SMS (email-to-SMS gateway).
+
+        **Rate Limiting:** 1 request per minute
+
+        **Code Expiry:** 15 minutes
+
+        **Carrier Selection:** Optional carrier parameter for specific gateways
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                carrier:
+                  type: string
+                  description: Optional carrier ID (att, tmobile, verizon, etc.)
+                  example: att
+      responses:
+        '200':
+          description: Verification code sent
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      expiresIn:
+                        type: string
+                        example: 15 minutes
+                      method:
+                        type: string
+                        example: email-to-sms
+                      availableCarriers:
+                        type: array
+                        items:
+                          type: string
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/RateLimit'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /auth/verify/phone/verify:
+    post:
+      tags:
+        - verification
+      summary: Verify SMS code
+      description: |
+        Verifies 6-digit code sent via SMS.
+
+        **Attempt Limit:** 3 attempts per code
+
+        **Code Requirements:**
+        - Must be 6 digits
+        - Must not be expired
+        - Must match most recent code
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - code
+              properties:
+                code:
+                  type: string
+                  pattern: '^\d{6}$'
+                  description: 6-digit verification code
+                  example: "123456"
+      responses:
+        '200':
+          description: Phone verified successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/RateLimit'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /jwt_test:
+    get:
+      tags:
+        - testing
+      summary: Test JWT token validity
+      description: Validates JWT token and returns success message if valid.
+      security: []
+      responses:
+        '200':
+          description: Token is valid
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Your token is valid
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /:
+    get:
+      tags:
+        - general
+      summary: Root endpoint
+      description: Serves the main index.html page with API information
+      security: []
+      responses:
+        '200':
+          description: HTML page served successfully
+          content:
+            text/html:
+              schema:
+                type: string
+
+  /doc:
+    get:
+      tags:
+        - documentation
+      summary: Documentation index
+      description: |
+        Displays an index of all available documentation files with links
+        to both rendered HTML and raw markdown versions.
+      security: []
+      responses:
+        '200':
+          description: Documentation index page
+          content:
+            text/html:
+              schema:
+                type: string
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /doc/{filename}:
+    get:
+      tags:
+        - documentation
+      summary: Serve rendered markdown file
+      description: |
+        Converts markdown documentation to HTML with syntax highlighting
+        and styled presentation.
+
+        **Security:** Validates filename to prevent path traversal attacks
+      security: []
+      parameters:
+        - name: filename
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: '^[a-zA-Z0-9_-]+\.md$'
+          description: Markdown filename (alphanumeric, underscores, hyphens only)
+          example: getting-started.md
+      responses:
+        '200':
+          description: Rendered HTML documentation
+          content:
+            text/html:
+              schema:
+                type: string
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /doc/raw/{filename}:
+    get:
+      tags:
+        - documentation
+      summary: Serve raw markdown file
+      description: |
+        Returns the raw markdown content of documentation files.
+        Useful for downloading or viewing source markdown.
+      security: []
+      parameters:
+        - name: filename
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: '^[a-zA-Z0-9_-]+\.md$'
+          description: Markdown filename (alphanumeric, underscores, hyphens only)
+          example: getting-started.md
+      responses:
+        '200':
+          description: Raw markdown content
+          content:
+            text/plain:
+              schema:
+                type: string
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /admin/users/create:
+    post:
+      tags:
+        - admin
+      summary: Create new user (Admin)
+      description: |
+        Creates a new user account with specified role and details.
+
+        **Required Role:** Admin (role level 3+)
+
+        **Permissions:** Can set any role, email verification, and account status
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - firstname
+                - lastname
+                - email
+                - username
+                - password
+                - phone
+                - role
+              properties:
+                firstname:
+                  type: string
+                  example: Jane
+                lastname:
+                  type: string
+                  example: Smith
+                email:
+                  type: string
+                  format: email
+                  example: jane.smith@example.com
+                username:
+                  type: string
+                  example: janesmith
+                password:
+                  type: string
+                  format: password
+                  minLength: 8
+                  example: AdminPass123!
+                phone:
+                  type: string
+                  example: "2065559999"
+                role:
+                  type: integer
+                  minimum: 1
+                  maximum: 5
+                  description: User role level
+                  example: 2
+      responses:
+        '201':
+          description: User created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: User created successfully
+                  data:
+                    type: object
+                    properties:
+                      user:
+                        $ref: '#/components/schemas/UserDetails'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /admin/users:
+    get:
+      tags:
+        - admin
+      summary: List all users (Admin)
+      description: |
+        Retrieves a paginated list of all users with filtering options.
+
+        **Required Role:** Admin (role level 3+)
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+          description: Page number
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 10
+          description: Results per page
+        - name: role
+          in: query
+          schema:
+            type: string
+          description: Filter by role name
+        - name: accountStatus
+          in: query
+          schema:
+            type: string
+            enum: [pending, active, suspended, locked, deleted]
+          description: Filter by account status
+      responses:
+        '200':
+          description: List of users
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      users:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/UserDetails'
+                      pagination:
+                        type: object
+                        properties:
+                          page:
+                            type: integer
+                            example: 1
+                          limit:
+                            type: integer
+                            example: 10
+                          total:
+                            type: integer
+                            example: 42
+                          pages:
+                            type: integer
+                            example: 5
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /admin/users/{id}:
+    get:
+      tags:
+        - admin
+      summary: Get user by ID (Admin)
+      description: |
+        Retrieves detailed information about a specific user.
+
+        **Required Role:** Admin (role level 3+)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: User ID
+          example: 123
+      responses:
+        '200':
+          description: User details
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      user:
+                        $ref: '#/components/schemas/UserDetails'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+    put:
+      tags:
+        - admin
+      summary: Update user (Admin)
+      description: |
+        Updates user information including role, status, and verification flags.
+
+        **Required Role:** Admin (role level 3+)
+
+        **Note:** Cannot update passwords through this endpoint
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: User ID
+          example: 123
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                firstname:
+                  type: string
+                  example: John
+                lastname:
+                  type: string
+                  example: Updated
+                email:
+                  type: string
+                  format: email
+                  example: john.updated@example.com
+                username:
+                  type: string
+                  example: johnupdated
+                phone:
+                  type: string
+                  example: "2065551111"
+                role:
+                  type: integer
+                  minimum: 1
+                  maximum: 5
+                  example: 2
+                accountStatus:
+                  type: string
+                  enum: [pending, active, suspended, locked, deleted]
+                  example: active
+                emailVerified:
+                  type: boolean
+                  example: true
+                phoneVerified:
+                  type: boolean
+                  example: true
+      responses:
+        '200':
+          description: User updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: User updated successfully
+                  data:
+                    type: object
+                    properties:
+                      user:
+                        $ref: '#/components/schemas/UserDetails'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+    delete:
+      tags:
+        - admin
+      summary: Delete user (Admin)
+      description: |
+        Soft deletes a user by setting accountStatus to 'deleted'.
+
+        **Required Role:** Admin (role level 3+)
+
+        **Note:** This is a soft delete - user data is retained
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: User ID
+          example: 123
+      responses:
+        '200':
+          description: User deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: User deleted successfully
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /admin/users/stats/dashboard:
+    get:
+      tags:
+        - admin
+      summary: Get dashboard statistics (Admin)
+      description: |
+        Retrieves aggregate statistics for the admin dashboard.
+
+        **Required Role:** Admin (role level 3+)
+
+        **Metrics:** Total users, active users, verification rates, role distribution
+      responses:
+        '200':
+          description: Dashboard statistics
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      totalUsers:
+                        type: integer
+                        example: 150
+                      activeUsers:
+                        type: integer
+                        example: 120
+                      pendingUsers:
+                        type: integer
+                        example: 15
+                      suspendedUsers:
+                        type: integer
+                        example: 10
+                      emailVerifiedCount:
+                        type: integer
+                        example: 100
+                      phoneVerifiedCount:
+                        type: integer
+                        example: 80
+                      roleDistribution:
+                        type: object
+                        properties:
+                          User:
+                            type: integer
+                            example: 100
+                          Moderator:
+                            type: integer
+                            example: 30
+                          Admin:
+                            type: integer
+                            example: 15
+                          SuperAdmin:
+                            type: integer
+                            example: 4
+                          Owner:
+                            type: integer
+                            example: 1
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+tags:
+  - name: general
+    description: General endpoints and root routes
+  - name: authentication
+    description: User authentication and password management
+  - name: verification
+    description: Email and phone verification endpoints
+  - name: documentation
+    description: Educational documentation endpoints
+  - name: admin
+    description: Administrative user management endpoints (Admin+ only)
+  - name: testing
+    description: Development and testing endpoints

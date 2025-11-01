@@ -17,6 +17,9 @@ router.post('/users/create', checkToken, requireAdmin, AdminController.createUse
 // list users
 router.get('/users', checkToken, requireAdmin, AdminController.listUsers);
 
+// dashboard stats (must be before /:id to avoid matching "stats" as an id)
+router.get('/users/stats/dashboard', checkToken, requireAdmin, AdminController.getDashboardStats);
+
 // get single user
 router.get('/users/:id', checkToken, requireAdmin, AdminController.getUserById);
 
@@ -25,8 +28,5 @@ router.put('/users/:id', checkToken, requireAdmin, AdminController.updateUser);
 
 // delete user (soft delete)
 router.delete('/users/:id', checkToken, requireAdmin, AdminController.deleteUser);
-
-// dashboard stats
-router.get('/users/stats/dashboard', checkToken, requireAdmin, AdminController.getDashboardStats);
 
 export default router;
