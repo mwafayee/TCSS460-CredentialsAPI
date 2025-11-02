@@ -1255,6 +1255,240 @@ paths:
         '500':
           $ref: '#/components/responses/ServerError'
 
+  /admin/users/search:
+    get:
+      tags:
+        - admin
+      summary: Search users (Admin)
+      description: |
+        Search users by name, email, or username with optional filters.
+
+        **Required Role:** Admin (role level 3+)
+
+        **Features:** Pagination, role filter, status filter, keyword search
+      parameters:
+        - name: q
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Search term (searches firstname, lastname, email, username)
+          example: john
+        - name: role
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 5
+          description: Filter by role (1=User, 2=Moderator, 3=Admin, 4=SuperAdmin, 5=Owner)
+          example: 1
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [active, inactive, pending, suspended]
+          description: Filter by account status
+          example: active
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+          description: Page number
+          example: 1
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 10
+          description: Number of results per page
+          example: 20
+      responses:
+        '200':
+          description: Search results
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      page:
+                        type: integer
+                        example: 1
+                      limit:
+                        type: integer
+                        example: 20
+                      count:
+                        type: integer
+                        example: 15
+                      searchTerm:
+                        type: string
+                        example: john
+                      users:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/UserDetails'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /admin/users/{id}/password:
+    put:
+      tags:
+        - admin
+      summary: Reset user password (Admin)
+      description: |
+        Allows admin to reset any user's password without requiring the old password.
+
+        **Required Role:** Admin (role level 3+)
+
+        **Security:** Use with caution - bypasses normal password verification
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: User ID
+          example: 123
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - password
+              properties:
+                password:
+                  type: string
+                  format: password
+                  minLength: 8
+                  maxLength: 128
+                  description: New password for the user
+                  example: NewSecurePass123!
+      responses:
+        '200':
+          description: Password reset successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Password reset successfully
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /admin/users/{id}/role:
+    put:
+      tags:
+        - admin
+      summary: Change user role (Admin)
+      description: |
+        Changes a user's role. Admin can only assign roles equal to or lower than their own.
+
+        **Required Role:** Admin (role level 3+)
+
+        **Role Hierarchy:**
+        - 1 = User
+        - 2 = Moderator
+        - 3 = Admin
+        - 4 = SuperAdmin
+        - 5 = Owner
+
+        **Permission Rule:** Cannot assign roles higher than your own
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: User ID
+          example: 123
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - role
+              properties:
+                role:
+                  type: integer
+                  minimum: 1
+                  maximum: 5
+                  description: New role level (1-5)
+                  example: 2
+      responses:
+        '200':
+          description: Role updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: User role updated successfully
+                  data:
+                    type: object
+                    properties:
+                      user:
+                        $ref: '#/components/schemas/UserDetails'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          description: Forbidden - Cannot assign role higher than your own
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: You cannot assign a role higher than your own
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
 tags:
   - name: general
     description: General endpoints and root routes

@@ -999,6 +999,178 @@
 						"description": "Soft delete user (sets status to 'deleted')."
 					},
 					"response": []
+				},
+				{
+					"name": "Users - Search Users",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Search results retrieved\", function () {",
+									"    pm.response.to.have.status(200);",
+									"    pm.expect(pm.response.json().success).to.be.true;",
+									"});",
+									"",
+									"pm.test(\"Response contains search results\", function () {",
+									"    const responseJson = pm.response.json();",
+									"    pm.expect(responseJson.data.users).to.be.an('array');",
+									"    pm.expect(responseJson.data).to.have.property('searchTerm');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{admin_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/admin/users/search?q=test&page=1&limit=10",
+							"host": ["{{base_url}}"],
+							"path": ["admin", "users", "search"],
+							"query": [
+								{
+									"key": "q",
+									"value": "test"
+								},
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "limit",
+									"value": "10"
+								},
+								{
+									"key": "status",
+									"value": "active",
+									"disabled": true
+								},
+								{
+									"key": "role",
+									"value": "1",
+									"disabled": true
+								}
+							]
+						},
+						"description": "Search users by name, email, or username with filters."
+					},
+					"response": []
+				},
+				{
+					"name": "Users - Reset User Password (Admin)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Password reset successfully\", function () {",
+									"    pm.response.to.have.status(200);",
+									"    pm.expect(pm.response.json().success).to.be.true;",
+									"});",
+									"",
+									"pm.test(\"Success message returned\", function () {",
+									"    const responseJson = pm.response.json();",
+									"    pm.expect(responseJson.data.message).to.include('reset');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{admin_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"password\": \"NewAdminResetPass123!\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/admin/users/{{test_user_id}}/password",
+							"host": ["{{base_url}}"],
+							"path": ["admin", "users", "{{test_user_id}}", "password"]
+						},
+						"description": "Admin resets a user's password without requiring old password."
+					},
+					"response": []
+				},
+				{
+					"name": "Users - Change User Role",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"User role changed successfully\", function () {",
+									"    pm.response.to.have.status(200);",
+									"    pm.expect(pm.response.json().success).to.be.true;",
+									"});",
+									"",
+									"pm.test(\"Updated role returned\", function () {",
+									"    const user = pm.response.json().data.user;",
+									"    pm.expect(user.account_role).to.equal(2);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{admin_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"role\": 2\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/admin/users/{{test_user_id}}/role",
+							"host": ["{{base_url}}"],
+							"path": ["admin", "users", "{{test_user_id}}", "role"]
+						},
+						"description": "Admin changes a user's role (Moderator in this case)."
+					},
+					"response": []
 				}
 			]
 		},

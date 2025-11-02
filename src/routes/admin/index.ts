@@ -17,6 +17,9 @@ router.post('/users/create', checkToken, requireAdmin, AdminController.createUse
 // list users
 router.get('/users', checkToken, requireAdmin, AdminController.listUsers);
 
+// search users (must be before /:id to avoid matching "search" as an id)
+router.get('/users/search', checkToken, requireAdmin, AdminController.searchUsers);
+
 // dashboard stats (must be before /:id to avoid matching "stats" as an id)
 router.get('/users/stats/dashboard', checkToken, requireAdmin, AdminController.getDashboardStats);
 
@@ -28,5 +31,11 @@ router.put('/users/:id', checkToken, requireAdmin, AdminController.updateUser);
 
 // delete user (soft delete)
 router.delete('/users/:id', checkToken, requireAdmin, AdminController.deleteUser);
+
+// reset user password (admin override)
+router.put('/users/:id/password', checkToken, requireAdmin, AdminController.resetUserPassword);
+
+// change user role
+router.put('/users/:id/role', checkToken, requireAdmin, AdminController.changeUserRole);
 
 export default router;
