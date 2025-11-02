@@ -33,16 +33,20 @@ export class AdminController {
             const { firstname, lastname, email, username, phone, role } = req.body;
             const creatorRole = req.claims.role; // from JWT middleware
 
-            if (ROLE_HIERARCHY[role] > ROLE_HIERARCHY[creatorRole]) {
+            // Handle numeric role from JWT
+            const creatorRank = typeof creatorRole === 'number' ? creatorRole : ROLE_HIERARCHY[creatorRole];
+            const targetRank = typeof role === 'number' ? role : ROLE_HIERARCHY[role];
+
+            if (targetRank > creatorRank) {
                 return sendError(res, 403,'You cannot create a user with a higher role than yours');
             }
 
             const result = await pool.query(
-                `INSERT INTO Account 
+                `INSERT INTO Account
                     (FirstName, LastName, Email, Username, Phone, Account_Role, Account_Status)
                  VALUES ($1, $2, $3, $4, $5, $6, 'active')
                  RETURNING Account_ID, FirstName, LastName, Email, Username, Phone, Account_Role;`,
-                [firstname, lastname, email, username, phone, ROLE_HIERARCHY[role]]
+                [firstname, lastname, email, username, phone, targetRank]
             );
 
             sendSuccess(res, {
@@ -114,12 +118,15 @@ export class AdminController {
             const { id } = req.params;
             const { firstname, lastname, email, username, phone, role } = req.body;
 
+            // Handle numeric role
+            const roleValue = typeof role === 'number' ? role : ROLE_HIERARCHY[role];
+
             const result = await pool.query(
                 `UPDATE Account
                  SET FirstName = $1, LastName = $2, Email = $3, Username = $4, Phone = $5, Account_Role = $6, Updated_At = NOW()
                  WHERE Account_ID = $7
                  RETURNING Account_ID, FirstName, LastName, Email, Username, Phone, Account_Role;`,
-                [firstname, lastname, email, username, phone, ROLE_HIERARCHY[role], id]
+                [firstname, lastname, email, username, phone, roleValue, id]
             );
 
             if (result.rowCount === 0) return sendError(res, 404,'User not found');

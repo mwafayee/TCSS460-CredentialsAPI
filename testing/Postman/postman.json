@@ -575,7 +575,7 @@
 		},
 		{
 			"name": "Admin Routes (Admin Auth Required)",
-			"description": "⚠️ CRITICAL API BUG: All admin routes will fail with 403 'insufficient privileges'. \n\nThe adminAuth middleware expects role as string keys ('Admin', 'User', etc.) but JWT tokens contain numeric roles (1, 2, 3). This is a fundamental incompatibility in src/core/middleware/adminAuth.ts line 33.\n\nTo fix: The API code needs to be updated to handle numeric roles in the adminAuth middleware.",
+			"description": "Admin routes require authentication with an admin user (role 3+). These endpoints allow admins to manage users, view statistics, and perform administrative operations.",
 			"item": [
 				{
 					"name": "Admin Login",
@@ -622,20 +622,22 @@
 					"response": []
 				},
 				{
-					"name": "Users - Create New User (KNOWN API BUG)",
+					"name": "Users - Create New User",
 					"event": [
 						{
 							"listen": "test",
 							"script": {
 								"exec": [
-									"// KNOWN BUG: Admin auth middleware expects string role keys but JWT contains numeric roles",
-									"// This will fail with 403 'Access denied: insufficient privileges'",
-									"pm.test(\"Known bug: Admin routes fail due to role type mismatch\", function () {",
-									"    pm.response.to.have.status(403);",
-									"    pm.expect(pm.response.json().message).to.include('insufficient privileges');",
+									"pm.test(\"User created successfully\", function () {",
+									"    pm.response.to.have.status(200);",
+									"    pm.expect(pm.response.json().success).to.be.true;",
 									"});",
 									"",
-									"console.log('⚠️ API BUG: adminAuth middleware incompatible with JWT role format');"
+									"if (pm.response.code === 200) {",
+									"    const userId = pm.response.json().data.user.account_id;",
+									"    pm.collectionVariables.set('created_user_id', userId);",
+									"    console.log('Created user ID:', userId);",
+									"}"
 								],
 								"type": "text/javascript"
 							}
@@ -949,7 +951,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"firstname\": \"Updated\",\n  \"lastname\": \"Name\",\n  \"role\": 2\n}"
+							"raw": "{\n  \"firstname\": \"Updated\",\n  \"lastname\": \"Name\",\n  \"email\": \"updated@example.com\",\n  \"username\": \"updateduser\",\n  \"phone\": \"2065559876\",\n  \"role\": 2\n}"
 						},
 						"url": {
 							"raw": "{{base_url}}/admin/users/{{created_user_id}}",

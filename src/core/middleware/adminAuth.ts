@@ -30,7 +30,8 @@ export const requireRole = (minRole: keyof typeof ROLE_HIERARCHY) => {
             }
 
             const userRole = req.claims.role;
-            const userRank = ROLE_HIERARCHY[userRole];
+            // Handle both numeric roles (from JWT) and string roles
+            const userRank = typeof userRole === 'number' ? userRole : ROLE_HIERARCHY[userRole];
             const minRank = ROLE_HIERARCHY[minRole];
 
             if (!userRank || userRank < minRank) {
