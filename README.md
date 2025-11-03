@@ -43,4 +43,4 @@ Email + phone verification functional
 Successfully deployed to Heroku and stable
 
 API Documentation:
-https://tcss460-credentials-api-1df52bcf213d.herokuapp.com/api-docs/
+https://tcss-460-credentials-api-0b1e5408ae96.herokuapp.com/api-docs/
