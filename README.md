@@ -42,8 +42,5 @@ Email + phone verification functional
 
 Successfully deployed to Heroku and stable
 
-Hosted API URL (Heroku):
-https://<CREDENTIALS-HEROKU-APP>.herokuapp.com
-
 API Documentation:
-https://<CREDENTIALS-HEROKU-APP>.herokuapp.com/api-docs
+https://tcss460-credentials-api-1df52bcf213d.herokuapp.com/api-docs/
