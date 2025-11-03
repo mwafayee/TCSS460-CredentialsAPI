@@ -451,7 +451,19 @@
 								"exec": [
 									"pm.test(\"Email verification sent\", function () {",
 									"    pm.response.to.have.status(200);",
-									"});"
+									"    pm.expect(pm.response.json().success).to.be.true;",
+									"});",
+									"",
+									"// In development mode, the API returns the verification URL with token",
+									"if (pm.response.code === 200) {",
+									"    const responseData = pm.response.json().data;",
+									"    if (responseData.verificationUrl) {",
+									"        const url = new URL(responseData.verificationUrl);",
+									"        const token = url.searchParams.get('token');",
+									"        pm.collectionVariables.set('email_verification_token', token);",
+									"        console.log('Email verification token:', token);",
+									"    }",
+									"}"
 								],
 								"type": "text/javascript"
 							}
@@ -488,7 +500,17 @@
 								"exec": [
 									"pm.test(\"SMS code sent\", function () {",
 									"    pm.response.to.have.status(200);",
-									"});"
+									"    pm.expect(pm.response.json().success).to.be.true;",
+									"});",
+									"",
+									"// In development mode, the API returns the verification code",
+									"if (pm.response.code === 200) {",
+									"    const responseData = pm.response.json().data;",
+									"    if (responseData.verificationCode) {",
+									"        pm.collectionVariables.set('sms_code', responseData.verificationCode);",
+									"        console.log('SMS verification code:', responseData.verificationCode);",
+									"    }",
+									"}"
 								],
 								"type": "text/javascript"
 							}
@@ -560,7 +582,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"phone\": \"+15551234567\",\n  \"code\": \"123456\"\n}"
+							"raw": "{\n  \"code\": \"{{sms_code}}\"\n}"
 						},
 						"url": {
 							"raw": "{{base_url}}/auth/verify/phone/verify",

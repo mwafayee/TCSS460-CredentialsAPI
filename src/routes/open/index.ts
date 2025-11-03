@@ -56,14 +56,6 @@ openRoutes.get('/auth/verify/carriers', VerificationController.getCarriers);
  */
 openRoutes.get('/auth/verify/email/confirm', validateEmailToken, VerificationController.confirmEmailVerification);
 
-/**
- * Send and verify phone number codes
- * POST /auth/verify/phone/send
- * POST /auth/verify/phone/verify
- */
-openRoutes.post('/auth/verify/phone/send', validatePhoneSend, VerificationController.sendSMSVerification);
-openRoutes.post('/auth/verify/phone/verify', validatePhoneVerify, VerificationController.verifySMSCode);
-
 // ===== TESTING ROUTES =====
 
 /**
