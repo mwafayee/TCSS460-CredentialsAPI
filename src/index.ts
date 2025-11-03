@@ -1,3 +1,5 @@
+import 'module-alias/register';
+
 /**
  * Application entry point with production-ready lifecycle management
  *
