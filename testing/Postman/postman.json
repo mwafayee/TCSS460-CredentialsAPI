@@ -578,6 +578,56 @@
 			"description": "Admin routes require authentication with an admin user (role 3+). These endpoints allow admins to manage users, view statistics, and perform administrative operations.",
 			"item": [
 				{
+					"name": "Setup - Seed Admin User",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Admin user seeded successfully\", function () {",
+									"    pm.response.to.have.status(200);",
+									"    pm.expect(pm.response.json().success).to.be.true;",
+									"});",
+									"",
+									"if (pm.response.code === 200) {",
+									"    const responseJson = pm.response.json();",
+									"    const token = responseJson.data.accessToken;",
+									"    const userId = responseJson.data.user.id;",
+									"    ",
+									"    // Save admin token for all other admin tests",
+									"    pm.collectionVariables.set(\"admin_token\", token);",
+									"    pm.collectionVariables.set(\"admin_user_id\", userId);",
+									"    ",
+									"    console.log(\"Admin user created with ID:\", userId);",
+									"    console.log(\"Admin token saved for subsequent tests\");",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"firstname\": \"Admin\",\n  \"lastname\": \"User\",\n  \"username\": \"adminuser\",\n  \"email\": \"admin@test-postman.com\",\n  \"phone\": \"+15559999999\",\n  \"password\": \"Admin123!\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/auth/seed-admin",
+							"host": ["{{base_url}}"],
+							"path": ["auth", "seed-admin"]
+						},
+						"description": "Creates the first admin user for testing. Only works if no admin exists yet. Automatically saves admin token for all subsequent admin tests."
+					},
+					"response": []
+				},
+				{
 					"name": "Admin Login",
 					"event": [
 						{
@@ -1112,9 +1162,9 @@
 							"raw": "{\n  \"password\": \"NewAdminResetPass123!\"\n}"
 						},
 						"url": {
-							"raw": "{{base_url}}/admin/users/{{test_user_id}}/password",
+							"raw": "{{base_url}}/admin/users/{{created_user_id}}/password",
 							"host": ["{{base_url}}"],
-							"path": ["admin", "users", "{{test_user_id}}", "password"]
+							"path": ["admin", "users", "{{created_user_id}}", "password"]
 						},
 						"description": "Admin resets a user's password without requiring old password."
 					},
@@ -1164,9 +1214,9 @@
 							"raw": "{\n  \"role\": 2\n}"
 						},
 						"url": {
-							"raw": "{{base_url}}/admin/users/{{test_user_id}}/role",
+							"raw": "{{base_url}}/admin/users/{{created_user_id}}/role",
 							"host": ["{{base_url}}"],
-							"path": ["admin", "users", "{{test_user_id}}", "role"]
+							"path": ["admin", "users", "{{created_user_id}}", "role"]
 						},
 						"description": "Admin changes a user's role (Moderator in this case)."
 					},

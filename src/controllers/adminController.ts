@@ -104,7 +104,19 @@ export class AdminController {
 
             if (result.rowCount === 0) return sendError(res, 404, 'User not found');
 
-            sendSuccess(res, result.rows[0]);
+            const user = result.rows[0];
+            sendSuccess(res, {
+                user: {
+                    id: user.account_id,
+                    firstName: user.firstname,
+                    lastName: user.lastname,
+                    email: user.email,
+                    username: user.username,
+                    phone: user.phone,
+                    role: user.account_role,
+                    status: user.account_status
+                }
+            });
         } catch (error) {
             console.error('Admin getUserById error:', error);
             sendError(res, 500,'Failed to get user details');
@@ -132,9 +144,18 @@ export class AdminController {
 
             if (result.rowCount === 0) return sendError(res, 404,'User not found');
 
+            const user = result.rows[0];
             sendSuccess(res, {
                 message: 'User updated successfully',
-                user: result.rows[0]
+                user: {
+                    id: user.account_id,
+                    firstName: user.firstname,
+                    lastName: user.lastname,
+                    email: user.email,
+                    username: user.username,
+                    phone: user.phone,
+                    role: user.account_role
+                }
             });
         } catch (error) {
             console.error('Admin updateUser error:', error);
@@ -171,13 +192,22 @@ export class AdminController {
                 SELECT
                     COUNT(*) AS total_users,
                     COUNT(*) FILTER (WHERE Account_Status = 'active') AS active_users,
-                    COUNT(*) FILTER (WHERE Account_Status = 'inactive') AS inactive_users
+                    COUNT(*) FILTER (WHERE Account_Status = 'inactive') AS inactive_users,
+                    COUNT(*) FILTER (WHERE Email_Verified = TRUE) AS verified_emails,
+                    COUNT(*) FILTER (WHERE Phone_Verified = TRUE) AS verified_phones
                 FROM Account;
             `);
 
+            const stats = result.rows[0];
             sendSuccess(res, {
                 message: 'Dashboard statistics fetched',
-                stats: result.rows[0]
+                stats: {
+                    totalUsers: parseInt(stats.total_users),
+                    activeUsers: parseInt(stats.active_users),
+                    inactiveUsers: parseInt(stats.inactive_users),
+                    verifiedEmails: parseInt(stats.verified_emails),
+                    verifiedPhones: parseInt(stats.verified_phones)
+                }
             });
         } catch (error) {
             console.error('Admin dashboard error:', error);
@@ -277,14 +307,25 @@ export class AdminController {
             // Generate new salt and hash
             const { salt, hash } = await generateSaltedHash(password);
 
-            // Update or insert credential
-            await pool.query(
-                `INSERT INTO Account_Credential (Account_ID, Salted_Hash, Salt)
-                 VALUES ($1, $2, $3)
-                 ON CONFLICT (Account_ID)
-                 DO UPDATE SET Salted_Hash = $2, Salt = $3`,
-                [id, hash, salt]
+            // Check if credential exists
+            const credCheck = await pool.query(
+                'SELECT Credential_ID FROM Account_Credential WHERE Account_ID = $1',
+                [id]
             );
+
+            if (credCheck.rowCount > 0) {
+                // Update existing credential
+                await pool.query(
+                    'UPDATE Account_Credential SET Salted_Hash = $1, Salt = $2 WHERE Account_ID = $3',
+                    [hash, salt, id]
+                );
+            } else {
+                // Insert new credential
+                await pool.query(
+                    'INSERT INTO Account_Credential (Account_ID, Salted_Hash, Salt) VALUES ($1, $2, $3)',
+                    [id, hash, salt]
+                );
+            }
 
             sendSuccess(res, { message: 'Password reset successfully' });
         } catch (error) {

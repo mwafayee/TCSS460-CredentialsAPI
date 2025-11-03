@@ -362,4 +362,85 @@ export class AuthController {
             service: 'TCSS-460-auth-squared'
         });
     }
+
+    /**
+     * Seed admin user (testing/grading purposes only)
+     * Creates first admin user if none exists
+     */
+    static async seedAdmin(request: IJwtRequest, response: Response): Promise<void> {
+        const { firstname, lastname, email, password, username, phone } = request.body;
+
+        try {
+            // Check if any admin already exists (role >= 3)
+            const adminCheck = await pool.query(
+                'SELECT Account_ID FROM Account WHERE Account_Role >= 3 LIMIT 1'
+            );
+
+            if (adminCheck.rowCount > 0) {
+                sendError(response, 400, 'Admin user already exists');
+                return;
+            }
+
+            // Check if user already exists
+            const userExists = await validateUserUniqueness(
+                { email, username, phone },
+                response
+            );
+            if (userExists) return;
+
+            // Execute admin creation transaction
+            await executeTransactionWithResponse(
+                async (client) => {
+                    // Create account with role 3 (admin)
+                    const insertAccountResult = await client.query(
+                        `INSERT INTO Account
+                         (FirstName, LastName, Username, Email, Phone, Account_Role, Email_Verified, Phone_Verified, Account_Status)
+                         VALUES ($1, $2, $3, $4, $5, 3, TRUE, FALSE, 'active')
+                         RETURNING Account_ID`,
+                        [firstname, lastname, username, email, phone]
+                    );
+
+                    const accountId = insertAccountResult.rows[0].account_id;
+
+                    // Generate salt and hash for password
+                    const salt = generateSalt();
+                    const saltedHash = generateHash(password, salt);
+
+                    // Store credentials
+                    await client.query(
+                        'INSERT INTO Account_Credential (Account_ID, Salted_Hash, Salt) VALUES ($1, $2, $3)',
+                        [accountId, saltedHash, salt]
+                    );
+
+                    // Generate JWT token
+                    const token = generateAccessToken({
+                        id: accountId,
+                        email,
+                        role: 3
+                    });
+
+                    return {
+                        accessToken: token,
+                        user: {
+                            id: accountId,
+                            email,
+                            name: firstname,
+                            lastname,
+                            username,
+                            role: 'Admin',
+                            emailVerified: true,
+                            phoneVerified: false,
+                            accountStatus: 'active',
+                        },
+                    };
+                },
+                response,
+                'Admin user seeded successfully',
+                'Failed to seed admin user'
+            );
+        } catch (error) {
+            console.error('Seed admin error:', error);
+            sendError(response, 500, 'Failed to seed admin user');
+        }
+    }
 }

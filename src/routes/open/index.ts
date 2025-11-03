@@ -72,6 +72,13 @@ openRoutes.post('/auth/verify/phone/verify', validatePhoneVerify, VerificationCo
  */
 openRoutes.get('/jwt_test', AuthController.testJWT);
 
+/**
+ * Seed admin user (testing/grading purposes only)
+ * Creates first admin user if none exists
+ * POST /auth/seed-admin
+ */
+openRoutes.post('/auth/seed-admin', validateRegister, AuthController.seedAdmin);
+
 // ===== DOCUMENTATION ROUTES =====
 
 /**
