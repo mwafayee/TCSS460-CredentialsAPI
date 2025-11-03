@@ -3,8 +3,7 @@
 -- Includes both email and phone verification
 
 -- Drop existing tables if they exist (for development)
-DROP TABLE IF EXISTS Email_Verification CASCADE;
-DROP TABLE IF EXISTS Phone_Verification CASCADE;
+DROP TABLE IF EXISTS verification_codes CASCADE;
 DROP TABLE IF EXISTS Account_Credential CASCADE;
 DROP TABLE IF EXISTS Account CASCADE;
 
@@ -33,29 +32,17 @@ CREATE TABLE Account_Credential (
     FOREIGN KEY(Account_ID) REFERENCES Account(Account_ID) ON DELETE CASCADE
 );
 
--- Phone verification codes table (SMS)
-CREATE TABLE Phone_Verification (
-    Verification_ID SERIAL PRIMARY KEY,
-    Account_ID INT NOT NULL,
-    Phone VARCHAR(15) NOT NULL,
-    Verification_Code VARCHAR(6) NOT NULL,
-    Code_Expires TIMESTAMPTZ NOT NULL,
-    Attempts INT DEFAULT 0,
-    Verified BOOLEAN DEFAULT FALSE,
-    Created_At TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY(Account_ID) REFERENCES Account(Account_ID) ON DELETE CASCADE
-);
-
--- Email verification tokens table
-CREATE TABLE Email_Verification (
-    Verification_ID SERIAL PRIMARY KEY,
-    Account_ID INT NOT NULL,
-    Email VARCHAR(255) NOT NULL,
-    Verification_Token VARCHAR(64) NOT NULL UNIQUE, -- Longer token for email links
-    Token_Expires TIMESTAMPTZ NOT NULL,
-    Verified BOOLEAN DEFAULT FALSE,
-    Created_At TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY(Account_ID) REFERENCES Account(Account_ID) ON DELETE CASCADE
+-- Unified verification codes table for both email and SMS
+CREATE TABLE verification_codes (
+    code_id SERIAL PRIMARY KEY,
+    account_id INTEGER NOT NULL REFERENCES Account(Account_ID) ON DELETE CASCADE,
+    code_type VARCHAR(10) NOT NULL CHECK (code_type IN ('email', 'phone')),
+    code VARCHAR(6) NOT NULL,
+    expires_at TIMESTAMPTZ NOT NULL,
+    attempts INTEGER DEFAULT 0,
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    used_at TIMESTAMPTZ,
+    CONSTRAINT valid_code CHECK (LENGTH(code) = 6 AND code ~ '^[0-9]+$')
 );
 
 -- Indexes for performance
@@ -64,13 +51,9 @@ CREATE INDEX idx_account_phone ON Account(Phone);
 CREATE INDEX idx_account_username ON Account(Username);
 CREATE INDEX idx_account_status ON Account(Account_Status);
 
-CREATE INDEX idx_phone_verification_account ON Phone_Verification(Account_ID);
-CREATE INDEX idx_phone_verification_code ON Phone_Verification(Verification_Code);
-CREATE INDEX idx_phone_verification_expires ON Phone_Verification(Code_Expires);
-
-CREATE INDEX idx_email_verification_account ON Email_Verification(Account_ID);
-CREATE INDEX idx_email_verification_token ON Email_Verification(Verification_Token);
-CREATE INDEX idx_email_verification_expires ON Email_Verification(Token_Expires);
+CREATE INDEX idx_verification_codes_account ON verification_codes(account_id);
+CREATE INDEX idx_verification_codes_expiry ON verification_codes(expires_at);
+CREATE INDEX idx_verification_codes_type_account ON verification_codes(code_type, account_id);
 
 -- Comments for documentation
 COMMENT ON TABLE Account IS 'Main user account table for Auth² Service';
