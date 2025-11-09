@@ -22,7 +22,7 @@ info:
 servers:
   - url: http://localhost:8000
     description: Local development
-  - url: https://your-production-url.com
+  - url: https://tcss-460-credentials-api-0b1e5408ae96.herokuapp.com
     description: Production server
 
 security:
