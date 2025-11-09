@@ -10,7 +10,8 @@ info:
     Student Template/Starter Project for TCSS-460 Web API Development demonstrating authentication and authorization concepts.
 
     **Published Web API**
-    Hosted at: [http://localhost:8000](http://localhost:8000)
+    Hosted at: [https://tcss-460-credentials-api-0b1e5408ae96.herokuapp.com](https://tcss-460-credentials-api-0b1e5408ae96.herokuapp.com)
+
 
   contact:
     name: TCSS 460 Support
@@ -20,10 +21,11 @@ info:
     url: https://opensource.org/licenses/MIT
 
 servers:
-  - url: http://localhost:8000
-    description: Local development
   - url: https://tcss-460-credentials-api-0b1e5408ae96.herokuapp.com
     description: Production server
+  - url: http://localhost:8000
+    description: Local development
+
 
 security:
   - bearerAuth: []
